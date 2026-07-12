@@ -1,0 +1,53 @@
+services:
+  nginx:
+    build: ./requirement/nginx
+    container_name: nginx
+    ports:
+      - "8443:443"
+    volumes:
+      - wordpress_data:/var/www/html
+    depends_on:
+      - wordpress
+    networks:
+      - frontend
+      - backend
+
+  wordpress:
+    build: ./requirement/wordpress
+    container_name: wordpress
+    volumes:
+      - wordpress_data:/var/www/html
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - mariadb
+    expose:
+      - "9000"
+    networks:
+      - backend
+
+  mariadb:
+    build: ./requirement/mariadb
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - backend
+
+volumes:
+  wordpress_data:
+  mariadb_data:
+
+networks:
+  frontend:
+    driver: bridge
+    internal: true
+  backend:
+    driver: bridge
