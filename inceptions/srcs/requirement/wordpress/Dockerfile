@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     bash \
     && docker-php-ext-install mysqli pdo pdo_mysql
 
-RUN echo "memory_limit = 512M" > /usr/local/etc/php/conf.d/memory-limit.ini
+
+RUN apk add --no-cache mariadb-client
 
 # Install WP-CLI
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
