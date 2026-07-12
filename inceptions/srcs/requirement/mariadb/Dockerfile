@@ -4,12 +4,17 @@ RUN apk add --no-cache \
     mariadb \
     mariadb-client
 
+COPY conf/my.cnf /etc/my.cnf
+
 COPY tools/setup.sh /usr/local/bin/setup.sh
 
-RUN chmod +x /usr/local/bin/setup.sh
+RUN chmod +x /usr/local/bin/setup.sh \
+    && mkdir -p /run/mysqld \
+    /var/lib/mysql \
+    /var/log/mysql
 
 VOLUME /var/lib/mysql
 
 EXPOSE 3306
 
-CMD ["/usr/local/bin/setup.sh"]
+ENTRYPOINT ["/usr/local/bin/setup.sh"]
