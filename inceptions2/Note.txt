@@ -1,0 +1,26 @@
+
+=====> mariadb Note <=========
+
+The complete sequence :
+
+
+Docker starts container
+        │
+        ▼
+Startup script runs
+        │
+        ├── create /run/mysqld
+        ├── set ownership
+        ├── initialize database if needed
+        └── start mysqld
+                │
+                ▼
+mysqld reads my.cnf
+        │
+        ├── run as mysql user
+        ├── use /var/lib/mysql
+        ├── create socket in /run/mysqld
+        ├── listen on configured port
+        └── accept connections
+
+================> Word press <=============
