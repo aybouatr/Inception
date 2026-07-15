@@ -9,7 +9,7 @@ RUN mkdir -p /etc/nginx/ssl \
         -out /etc/nginx/ssl/server.crt \
         -subj "/C=MA/ST=Casablanca/L=Casablanca/O=42/OU=Inception/CN=aybouatr.42.fr"
 
-COPY ./config/nginx.conf /etc/nginx/http.d/default.conf
+COPY config/default.conf /etc/nginx/http.d/default.conf
 
 RUN mkdir -p /var/www/html 
 

@@ -63,4 +63,4 @@ fi
 
 echo "Starting PHP-FPM..."
 
-exec php-fpm -F
+exec /usr/sbin/php-fpm8.2 -F
