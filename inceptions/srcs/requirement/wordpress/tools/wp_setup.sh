@@ -61,6 +61,8 @@ then
         --allow-root
 fi
 
+// add exentation for redis cache
+
 echo "Starting PHP-FPM..."
 
 exec /usr/sbin/php-fpm8.2 -F
