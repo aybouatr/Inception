@@ -62,21 +62,49 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    healthcheck:
-      test: ["ping", "srcs-mariadb"]
-      interval: 30s
-      timeout: 1m
-      retries: 10
-      start_period: 10s
+    # healthcheck:
+    #   test: ["ping", "srcs-mariadb"]
+    #   interval: 30s
+    #   timeout: 1m
+    #   retries: 10
+    #   start_period: 10s
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql 
     networks:
       - inception
+  redis:                                  ## redis
+    build: ./bonus/redis
+    container_name: redis
+    image: redis
+    restart: unless-stopped
+    expose:
+      - "6379"                         
+    networks:
+      - inception
+    
+  static: 
+    build: ./bonus/static
+    container_name: static-site
+    networks: 
+      - inception
+    restart: always
 
+  portainer:
+    build: ./bonus/portainer
+    container_name: portainer
+    restart: always
+    ports:
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - inception
 volumes:
   wordpress_data:
     name: wordpress_data
-
+  portainer_data:
+    name: portainer_data
   mariadb_data:
     name: mariadb_data
 

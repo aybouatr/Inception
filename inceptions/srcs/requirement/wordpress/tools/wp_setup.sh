@@ -39,6 +39,7 @@ if [ ! -f wp-config.php ]; then
         --allow-root
 fi
 
+
 if ! wp core is-installed --allow-root
 then
     echo "Installing WordPress..."
@@ -61,7 +62,19 @@ then
         --allow-root
 fi
 
-// add exentation for redis cache
+# Add extension for Redis cache
+
+echo "Configuring Redis..."
+
+wp plugin install redis-cache --activate --allow-root || true
+
+wp config set WP_REDIS_HOST redis --allow-root || true
+wp config set WP_REDIS_PORT 6379 --allow-root || true
+wp config set WP_CACHE true --raw --allow-root || true
+
+wp redis enable --allow-root || true
+
+echo "Redis cache configured!"
 
 echo "Starting PHP-FPM..."
 
