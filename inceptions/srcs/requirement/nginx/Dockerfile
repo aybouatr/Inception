@@ -13,7 +13,6 @@ COPY config/default.conf /etc/nginx/http.d/default.conf
 
 RUN mkdir -p /var/www/html 
 
-
 EXPOSE 443
 
 
