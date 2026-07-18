@@ -1,25 +1,392 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inception Static Website</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mira Voss — Product Design Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F6F2;
+    --ink:#14181F;
+    --ink-soft:#565F6E;
+    --accent:#2F5DE3;
+    --accent-soft:#E7ECFC;
+    --signal:#C6FF3D;
+    --line:#DAD7CD;
+    --line-strong:#B9B5A8;
+    --mono: 'JetBrains Mono', monospace;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
 
-    <link rel="stylesheet" href="style.css">
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+  }
+
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/ 100% 48px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/ 48px 100%,
+      var(--paper);
+    background-attachment:local;
+    color:var(--ink);
+    font-family:var(--body);
+    line-height:1.5;
+    opacity:0.999; /* fix for some bg render bugs */
+  }
+  body{
+    background-image:
+      linear-gradient(rgba(20,24,31,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,24,31,0.05) 1px, transparent 1px);
+    background-size:48px 48px;
+  }
+
+  .wrap{max-width:1120px; margin:0 auto; padding:0 32px;}
+
+  /* corner registration marks */
+  .reg{position:fixed; width:20px; height:20px; z-index:40; pointer-events:none;}
+  .reg::before, .reg::after{content:""; position:absolute; background:var(--ink); opacity:0.35;}
+  .reg::before{width:100%; height:1px; top:50%;}
+  .reg::after{width:1px; height:100%; left:50%;}
+  .reg.tl{top:14px; left:14px;}
+  .reg.tr{top:14px; right:14px;}
+  .reg.bl{bottom:14px; left:14px;}
+  .reg.br{bottom:14px; right:14px;}
+
+  header.top{
+    position:sticky; top:0; z-index:30;
+    background:rgba(247,246,242,0.86);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line-strong);
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 0;
+  }
+  .wordmark{
+    font-family:var(--display); font-weight:700; font-size:18px; letter-spacing:-0.01em;
+    color:var(--ink); text-decoration:none;
+  }
+  .wordmark span{color:var(--accent);}
+  nav.primary{display:flex; gap:28px;}
+  nav.primary a{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--ink-soft); text-decoration:none; padding:4px 2px; border-bottom:1px solid transparent;
+  }
+  nav.primary a:hover, nav.primary a:focus-visible{color:var(--ink); border-bottom-color:var(--accent);}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--accent); outline-offset:3px;}
+
+  /* HERO */
+  .hero{
+    position:relative;
+    padding:96px 0 88px;
+    border-bottom:1px solid var(--line-strong);
+    overflow:hidden;
+    cursor:crosshair;
+  }
+  .hero-eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--accent); display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .hero-eyebrow .dot{width:6px; height:6px; background:var(--accent); border-radius:50%;}
+  h1.hero-title{
+    font-family:var(--display); font-weight:700; font-size:clamp(38px, 6.4vw, 76px);
+    line-height:1.02; letter-spacing:-0.02em; margin:0 0 28px; max-width:14ch;
+  }
+  h1.hero-title em{font-style:normal; color:var(--accent);}
+  p.hero-sub{
+    font-size:19px; color:var(--ink-soft); max-width:52ch; margin:0 0 40px;
+  }
+  .hero-cta{display:flex; gap:14px; flex-wrap:wrap;}
+  .btn{
+    font-family:var(--mono); font-size:13px; text-transform:uppercase; letter-spacing:0.04em;
+    padding:14px 22px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    border:1px solid var(--ink); color:var(--ink); transition:background 0.15s, color 0.15s;
+  }
+  .btn.solid{background:var(--ink); color:var(--paper);}
+  .btn.solid:hover{background:var(--accent); border-color:var(--accent);}
+  .btn.ghost:hover{background:var(--ink); color:var(--paper);}
+
+  .coord{
+    position:absolute; font-family:var(--mono); font-size:11px; color:var(--ink-soft);
+    opacity:0; transition:opacity 0.1s; white-space:nowrap;
+  }
+  .crosshair{
+    position:absolute; width:22px; height:22px; pointer-events:none; opacity:0;
+    transition:opacity 0.12s;
+  }
+  .crosshair::before, .crosshair::after{content:""; position:absolute; background:var(--accent);}
+  .crosshair::before{width:100%; height:1px; top:50%; left:0;}
+  .crosshair::after{width:1px; height:100%; left:50%; top:0;}
+
+  /* SECTION LABEL SYSTEM */
+  .section{padding:88px 0; border-bottom:1px solid var(--line-strong); position:relative;}
+  .section-label{
+    display:flex; align-items:baseline; gap:16px; margin-bottom:48px;
+  }
+  .section-label .idx{
+    font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:0.04em;
+  }
+  .section-label h2{
+    font-family:var(--display); font-size:28px; font-weight:600; margin:0; letter-spacing:-0.01em;
+  }
+  .section-label .rule{flex:1; height:1px; background:var(--line-strong);}
+
+  /* ABOUT */
+  .about-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:64px; align-items:start;}
+  .about-grid p{font-size:17px; color:var(--ink-soft); margin:0 0 18px;}
+  .about-grid p strong{color:var(--ink); font-weight:600;}
+  .stat-block{
+    border:1px solid var(--line-strong); padding:24px; background:rgba(255,255,255,0.4);
+  }
+  .stat-row{display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line);}
+  .stat-row:last-child{border-bottom:none;}
+  .stat-row .k{font-family:var(--mono); font-size:12px; color:var(--ink-soft); text-transform:uppercase;}
+  .stat-row .v{font-family:var(--mono); font-size:13px; color:var(--ink); font-weight:500;}
+
+  /* WORK */
+  .work-list{display:flex; flex-direction:column;}
+  .work-item{
+    display:grid; grid-template-columns:0.9fr 1.6fr 0.7fr; gap:32px;
+    padding:32px 0; border-top:1px solid var(--line);
+    position:relative;
+  }
+  .work-item:first-child{border-top:none;}
+  .work-item:hover{background:var(--accent-soft);}
+  .work-item{margin:0 -20px; padding-left:20px; padding-right:20px;}
+  .work-tag{
+    font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.04em;
+    color:var(--accent); background:var(--accent-soft); padding:3px 8px; align-self:start;
+    border:1px solid var(--accent); width:fit-content;
+  }
+  .work-item:hover .work-tag{background:var(--signal); border-color:var(--ink); color:var(--ink);}
+  .work-name{font-family:var(--display); font-size:24px; font-weight:600; margin:0 0 8px;}
+  .work-desc{color:var(--ink-soft); font-size:15px; margin:0; max-width:48ch;}
+  .work-meta{
+    font-family:var(--mono); font-size:12px; color:var(--ink-soft);
+    display:flex; flex-direction:column; gap:6px; align-items:flex-end; text-align:right;
+  }
+  .work-meta .spec{opacity:0; transition:opacity 0.15s;}
+  .work-item:hover .spec{opacity:1;}
+
+  @media (max-width:800px){
+    .work-item{grid-template-columns:1fr;}
+    .work-meta{align-items:flex-start; text-align:left;}
+    .about-grid{grid-template-columns:1fr;}
+  }
+
+  /* PROCESS */
+  .process-list{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:1px;
+    background:var(--line-strong); border:1px solid var(--line-strong);
+  }
+  .process-item{background:var(--paper); padding:28px 22px;}
+  .process-num{font-family:var(--mono); color:var(--accent); font-size:13px; margin-bottom:16px;}
+  .process-item h3{font-family:var(--display); font-size:17px; margin:0 0 10px;}
+  .process-item p{font-size:14px; color:var(--ink-soft); margin:0;}
+  @media (max-width:800px){.process-list{grid-template-columns:1fr;}}
+
+  /* CONTACT */
+  .contact-inner{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:32px;}
+  .contact-title{font-family:var(--display); font-size:clamp(30px,4.5vw,48px); font-weight:700; margin:0; max-width:16ch; letter-spacing:-0.02em;}
+  .contact-links{display:flex; flex-direction:column; gap:10px; align-items:flex-end;}
+  .contact-links a{font-family:var(--mono); font-size:14px; color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line-strong);}
+  .contact-links a:hover{border-color:var(--accent); color:var(--accent);}
+  @media (max-width:700px){.contact-links{align-items:flex-start;}}
+
+  footer{padding:28px 0; text-align:center;}
+  footer p{font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin:0; letter-spacing:0.03em;}
+</style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Welcome to Inception</h1>
+<div class="reg tl"></div>
+<div class="reg tr"></div>
+<div class="reg bl"></div>
+<div class="reg br"></div>
 
-        <p>This is a static website running inside Docker.</p>
+<header class="top">
+  <div class="wrap topbar">
+    <a href="#" class="wordmark">MIRA<span>·</span>VOSS</a>
+    <nav class="primary">
+      <a href="#work">Work</a>
+      <a href="#process">Process</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
 
-        <button onclick="hello()">Click Me</button>
-
-        <p id="msg"></p>
+<section class="hero" id="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow"><span class="dot"></span>PRODUCT DESIGN SYSTEMS — CASABLANCA / REMOTE</div>
+    <h1 class="hero-title">I build the <em>rules</em> so teams stop guessing.</h1>
+    <p class="hero-sub">Ten years designing component libraries, tokens, and interface guidelines for fintech and productivity products — the invisible layer that keeps a hundred designers drawing the same button.</p>
+    <div class="hero-cta">
+      <a href="#work" class="btn solid">Selected work</a>
+      <a href="#contact" class="btn ghost">Get in touch</a>
     </div>
+  </div>
+  <div class="crosshair" id="crosshair"></div>
+  <div class="coord" id="coord"></div>
+</section>
 
-    <script src="script.js"></script>
+<section class="section" id="about">
+  <div class="wrap">
+    <div class="section-label"><span class="idx">01</span><h2>About</h2><span class="rule"></span></div>
+    <div class="about-grid">
+      <div>
+        <p><strong>I'm a product designer who ended up specializing in the parts other designers don't want to touch:</strong> the tokens, the grid, the naming conventions, the seventeen shades of gray that need a reason to exist.</p>
+        <p>Most recently I led design systems at a fintech scale-up, taking three products with three different button styles down to one shared library used by 40 designers and engineers. Before that, I spent four years doing product design at a logistics startup, which is where I learned that a good system is really a form of kindness to your future self.</p>
+        <p>I work closely with engineering from day one — a system that only exists in Figma isn't a system, it's a mood board.</p>
+      </div>
+      <div class="stat-block">
+        <div class="stat-row"><span class="k">Focus</span><span class="v">Design systems, UI</span></div>
+        <div class="stat-row"><span class="k">Based</span><span class="v">Casablanca, MA</span></div>
+        <div class="stat-row"><span class="k">Available</span><span class="v">Selected freelance</span></div>
+        <div class="stat-row"><span class="k">Tools</span><span class="v">Figma, Tokens Studio, React</span></div>
+        <div class="stat-row"><span class="k">Years</span><span class="v">10</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="work">
+  <div class="wrap">
+    <div class="section-label"><span class="idx">02</span><h2>Selected work</h2><span class="rule"></span></div>
+    <div class="work-list">
+
+      <div class="work-item">
+        <span class="work-tag">Design system</span>
+        <div>
+          <h3 class="work-name">Compass</h3>
+          <p class="work-desc">A token-based component library for an analytics platform, built to unify three product teams around one visual language without slowing anyone down.</p>
+        </div>
+        <div class="work-meta">
+          <span>FINTECH · 2024</span>
+          <span class="spec">142 COMPONENTS</span>
+          <span class="spec">40 ADOPTERS</span>
+        </div>
+      </div>
+
+      <div class="work-item">
+        <span class="work-tag">Product redesign</span>
+        <div>
+          <h3 class="work-name">Anchor</h3>
+          <p class="work-desc">End-to-end redesign of a small-business banking app, cutting the average onboarding flow from 14 screens to 6 without removing a single required field.</p>
+        </div>
+        <div class="work-meta">
+          <span>BANKING · 2023</span>
+          <span class="spec">6 SCREENS</span>
+          <span class="spec">−38% DROP-OFF</span>
+        </div>
+      </div>
+
+      <div class="work-item">
+        <span class="work-tag">Component library</span>
+        <div>
+          <h3 class="work-name">Northwind</h3>
+          <p class="work-desc">An internal tools kit for logistics dashboards, designed for density and speed rather than polish — built for people who stare at it for eight hours a day.</p>
+        </div>
+        <div class="work-meta">
+          <span>LOGISTICS · 2021</span>
+          <span class="spec">88 COMPONENTS</span>
+          <span class="spec">12 INTERNAL APPS</span>
+        </div>
+      </div>
+
+      <div class="work-item">
+        <span class="work-tag">Accessibility audit</span>
+        <div>
+          <h3 class="work-name">Groundwork</h3>
+          <p class="work-desc">A full accessibility pass across a design system's color, type, and interaction tokens, bringing every core component to WCAG AA without a visual overhaul.</p>
+        </div>
+        <div class="work-meta">
+          <span>HEALTHCARE · 2020</span>
+          <span class="spec">WCAG AA</span>
+          <span class="spec">210 TOKENS AUDITED</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="process">
+  <div class="wrap">
+    <div class="section-label"><span class="idx">03</span><h2>Process</h2><span class="rule"></span></div>
+    <div class="process-list">
+      <div class="process-item">
+        <div class="process-num">STEP 1</div>
+        <h3>Audit</h3>
+        <p>Inventory every existing pattern, however inconsistent, before proposing a single new one.</p>
+      </div>
+      <div class="process-item">
+        <div class="process-num">STEP 2</div>
+        <h3>Define</h3>
+        <p>Set the tokens — color, type, space — as the shared vocabulary everything else is built from.</p>
+      </div>
+      <div class="process-item">
+        <div class="process-num">STEP 3</div>
+        <h3>Build</h3>
+        <p>Design and code components side by side, so the library is never just a picture of itself.</p>
+      </div>
+      <div class="process-item">
+        <div class="process-num">STEP 4</div>
+        <h3>Document</h3>
+        <p>Write usage guidelines a tired engineer at 5pm can actually follow.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="contact" style="border-bottom:none;">
+  <div class="wrap contact-inner">
+    <h2 class="contact-title">Let's build something that outlasts the trend.</h2>
+    <div class="contact-links">
+      <a href="mailto:hello@miravoss.design">hello@miravoss.design</a>
+      <a href="#">linkedin.com/in/miravoss</a>
+      <a href="#">dribbble.com/miravoss</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>MIRA VOSS — GRID 48PX — © 2026</p>
+</footer>
+
+<script>
+  const hero = document.getElementById('hero');
+  const crosshair = document.getElementById('crosshair');
+  const coord = document.getElementById('coord');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reduceMotion) {
+    hero.addEventListener('mousemove', (e) => {
+      const rect = hero.getBoundingClientRect();
+      const x = Math.round(e.clientX - rect.left);
+      const y = Math.round(e.clientY - rect.top);
+      crosshair.style.opacity = '0.9';
+      crosshair.style.left = (x - 11) + 'px';
+      crosshair.style.top = (y - 11) + 'px';
+      coord.style.opacity = '0.8';
+      coord.style.left = (x + 16) + 'px';
+      coord.style.top = (y - 18) + 'px';
+      coord.textContent = 'X ' + x + '  Y ' + y;
+    });
+    hero.addEventListener('mouseleave', () => {
+      crosshair.style.opacity = '0';
+      coord.style.opacity = '0';
+    });
+  }
+</script>
 
 </body>
 </html>

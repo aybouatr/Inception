@@ -11,6 +11,8 @@ like is OS it's take from rescourcace
 --> big problem it's has each virtula machine OS 
 let's know OS : it's just karnel and kernale mode and user mode 
 
+![Alternative text](https://media.geeksforgeeks.org/wp-content/uploads/20250823130235313168/virtual_machines.webp)
+
 in my stituation not neeed user mode and kernel mode just need karnel 
 
 {awal haja nhayd guest os and conect with host os that main idia containers }
@@ -21,6 +23,8 @@ that become all delete just install thing i need in user mode cmd packages ...
 this is way can add app with all dependacies like create env foe spicifque app
 
 ----------------- but containarisation since from unix ---------------
+![Alternative text](https://www.technologyuk.net/computing/operating-systems/images/monolithic_os_kernel.gif)
+
 
 two thing important :
 

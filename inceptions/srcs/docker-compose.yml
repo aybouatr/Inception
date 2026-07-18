@@ -88,6 +88,23 @@ services:
     networks: 
       - inception
     restart: always
+  
+  ftp:
+    build: ./bonus/FTP
+    container_name: ftp
+    restart: always
+    depends_on:
+      - wordpress
+    environment:
+      FTP_USER: ${FTP_USER}
+      FTP_PASSWORD: ${FTP_PASSWORD}
+      FTP_PASV_ADDRESS: ${FTP_PASV_ADDRESS}
+    ports:
+      - "21:21"
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+    - inception
 
   portainer:
     build: ./bonus/portainer
