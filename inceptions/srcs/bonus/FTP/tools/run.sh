@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 mkdir -p /var/run/vsftpd/empty
@@ -11,20 +10,16 @@ if ! id "$FTP_USER" >/dev/null 2>&1; then
         -d "/home/$FTP_USER" \
         -s /usr/sbin/nologin \
         "$FTP_USER"
-
-    echo "$FTP_USER:$FTP_PASSWORD" | chpasswd
 fi
 
+# Always set/update the password
+echo "$FTP_USER:$FTP_PASSWORD" | chpasswd
 
-
-
-# Give the FTP user ownership of the WordPress files
-
-
-
+# Give ownership of the WordPress files
 chown -R "$FTP_USER:$FTP_USER" /var/www/html
 
-# Replace passive IP from environment
-sed -i "s|PASV_ADDRESS|$FTP_PASV_ADDRESS|g" /etc/vsftpd.conf
+# Replace passive IP
+sed -i "s|PASV_ADDRESS|${FTP_PASV_ADDRESS}|g" /etc/vsftpd.conf
 
+# Start FTP server
 exec /usr/sbin/vsftpd /etc/vsftpd.conf

@@ -67,7 +67,7 @@ services:
     #   interval: 30s
     #   timeout: 1m
     #   retries: 10
-    #   start_period: 10s
+    #   start_period: 10s 
     volumes:
       - mariadb_data:/var/lib/mysql 
     networks:
@@ -88,23 +88,35 @@ services:
     networks: 
       - inception
     restart: always
-  
-  ftp:
+   
+  fftp:
     build: ./bonus/FTP
     container_name: ftp
     restart: always
     depends_on:
       - wordpress
+      - mariadb
     environment:
       FTP_USER: ${FTP_USER}
       FTP_PASSWORD: ${FTP_PASSWORD}
       FTP_PASV_ADDRESS: ${FTP_PASV_ADDRESS}
+
     ports:
       - "21:21"
+      - "30000-30009:30000-30009"
     volumes:
       - wordpress_data:/var/www/html
     networks:
-    - inception
+      - inception
+  
+  adminer:
+    build: ./bonus/Adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "8888:8888"
+    networks:
+      - inception
 
   portainer:
     build: ./bonus/portainer

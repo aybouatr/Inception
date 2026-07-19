@@ -9,6 +9,6 @@ COPY tools/run.sh /usr/local/bin/run.sh
 
 RUN chmod +x /usr/local/bin/run.sh
 
-EXPOSE 21
+EXPOSE 2121
 
 ENTRYPOINT ["/usr/local/bin/run.sh"]
