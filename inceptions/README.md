@@ -19,7 +19,7 @@ Docker Compose:
 - **MariaDB** — the database used by WordPress, running with no built-in
   HTTP server either.
 
-Each service is built from scratch on a minimal base image (Alpine ||
+Each service is built from scratch on a minimal base image (Alpine or
 Debian), configured through its own `Dockerfile` and configuration files, and
 communicates with the others only over a dedicated, internal Docker network.
 No `latest` tags, no pre-built "all-in-one" images, no `network: host`, and
@@ -95,6 +95,112 @@ make re     # clean, then rebuild everything from scratch
 | FTP | port 21 (+ passive range 30000-30009) | Access to the WordPress volume |
 | Static site | internal only, reverse-proxied | Not directly published on a host port |
 
+## Core Concepts
+
+The concepts below are presented in the same logical progression a Docker
+course would follow (containers → Docker → images → engine → network →
+storage → Dockerfile → Compose → Portainer), but limited strictly to what
+this project actually uses. Swarm, Docker Stack, Kubernetes, and other
+topics sometimes covered in general Docker courses are intentionally left
+out, since none of them are part of Inception.
+
+### 1. Containers
+
+A container is a lightweight, isolated environment that bundles an
+application with everything it needs to run (code, runtime, libraries,
+config), while sharing the host machine's kernel instead of running its own.
+In this project, every service — NGINX, WordPress, MariaDB, and each bonus
+service — runs as exactly one container, following the "one process per
+container" rule the subject requires.
+
+### 2. Container Architecture
+
+A container gets its isolation from two Linux kernel mechanisms:
+- **namespaces**, which give a container its own private view of the
+  system (its own network interfaces, process tree, mount points,
+  hostname, ...) even though it runs on the same kernel as everything else
+  on the host,
+- **cgroups**, which limit and account for the resources (CPU, memory, I/O)
+  a container's processes are allowed to use.
+
+This is why containers start almost instantly and cost far less than a full
+virtual machine: there's no second kernel to boot, only a new, isolated view
+of the existing one.
+
+### 3. Docker
+
+Docker is the tool used to build, ship, and run these containers. It takes a
+`Dockerfile`, builds an image from it, and runs that image as a container,
+handling the underlying namespaces/cgroups setup so the project doesn't
+have to manage them by hand. `docker compose` extends this to run several
+containers together as a coordinated stack, which is exactly how this
+project's ten services (three mandatory + bonus) are launched with a single
+`make`.
+
+### 4. Images
+
+An image is the read-only, versioned template a container is created from.
+It is built in layers, one per `Dockerfile` instruction, each layer cached
+so unrelated rebuilds are fast. Every image in this project is built `FROM`
+a minimal base (`alpine:latest`, or a pinned `debian:bookworm` /
+`debian:bookworm-slim`), not from a pre-built service image, per the
+subject's requirement to write each `Dockerfile` from scratch.
+
+### 5. Docker Engine Architecture
+
+The Docker Engine is a client/server system: the Docker CLI (`docker`,
+`docker compose`) talks to the **Docker daemon** (`dockerd`), which does the
+actual work of building images, and creating/starting/stopping containers,
+networks, and volumes. Portainer (bonus service) is a web UI for exactly
+this daemon: its container is given access to `/var/run/docker.sock` so it
+can query and control the same Docker Engine `docker compose` uses, without
+needing its own separate Docker installation.
+
+### 6. Network
+
+By default, Docker isolates each container's network stack; containers on
+the same **bridge** network can reach each other by container/service name
+through Compose's built-in DNS, but nothing is reachable from outside
+unless a port is explicitly published. This project defines one custom
+bridge network, `inception`, shared by every service, and only publishes
+the ports that genuinely need to be public (443 for NGINX, 21 and
+30000-30009 for FTP, 8888 for Adminer, 9443 for Portainer) — see the
+[Docker Network vs Host Network](#docker-network-vs-host-network) comparison
+below for more detail.
+
+### 7. Storage
+
+Containers are ephemeral by default: anything written to a container's own
+filesystem disappears when the container is removed. To keep data across
+restarts and rebuilds, this project uses named Docker volumes
+(`wordpress_data`, `mariadb_data`, `portainer_data`) backed by fixed
+directories on the host — see
+[Docker Volumes vs Bind Mounts](#docker-volumes-vs-bind-mounts) below.
+
+### 8. Dockerfile
+
+Each service's `Dockerfile` defines its base image, the packages it
+installs, the configuration files it copies in, and the command that runs
+when the container starts (`CMD` / `ENTRYPOINT`). For example, the MariaDB
+and WordPress containers use an `ENTRYPOINT` startup script to perform
+first-run setup (creating the database/user, installing WordPress via
+WP-CLI) before handing off to the actual server process, so the whole stack
+is ready to use as soon as it starts.
+
+### 9. Docker Compose
+
+`srcs/docker-compose.yml` declares every service, its build context, its
+environment variables, its volumes, and the shared network, so the entire
+ten-container infrastructure is described in one file and brought up
+together with `docker compose up -d --build` (wrapped here by `make`).
+
+### 10. Portainer (bonus)
+
+Portainer is a web-based UI on top of the Docker Engine: it lets you see and
+manage running containers, images, volumes, and networks visually instead
+of through the CLI. It's included here as a bonus service, reachable at
+`https://<host>:9443`.
+
 ## Project Description
 
 ### Use of Docker and sources included in the project
@@ -154,14 +260,6 @@ WordPress, MariaDB, and the bonus services) is just a process plus its
 dependencies, not a whole different operating system, so paying the cost of
 a full VM per service would be unnecessary overhead for what is essentially
 "install this software and run it in isolation."
-
-### virtual machines vs docker architecture
-![Alternative text](https://media.geeksforgeeks.org/wp-content/uploads/20230109130229/Docker-vs-VM.png)
-
-
-
-![Alternative text](https://media.geeksforgeeks.org/wp-content/uploads/20250823130235313168/virtual_machines.webp)
-
 
 ### Secrets vs Environment Variables
 
@@ -252,89 +350,25 @@ back up, or inspect directly on the host.
 - [Redis documentation](https://redis.io/docs/latest/)
 - [Adminer](https://www.adminer.org/)
 - [Portainer documentation](https://docs.portainer.io/)
+- [BigData Channel — Docker full course (YouTube)](https://youtu.be/PrusdhS2lmo):
+  chapters used for the "Core Concepts" section above — Introduction to
+  Containers, Container Architecture, Introduction to Docker, Images - Deep
+  Dive, Docker Engine Architecture, Network, Storage, Dockerfile - Deep
+  Dive, Docker Compose, Portainer. (Swarm, Stack, and Kubernetes chapters
+  from the same video are not relevant to this project and were not used.)
+
+## ----------------------------------------------------------------------------------
+# Intrucduction About Containers 
+
 
 
 ### virtual machines vs docker architecture
 ![Alternative text](https://media.geeksforgeeks.org/wp-content/uploads/20230109130229/Docker-vs-VM.png)
 
-In short: VMs virtualize the hardware and run a full OS per instance, which
-is heavy but very isolated. Containers virtualize at the OS level, sharing
-one kernel across many isolated processes, which is much lighter but relies
-on the kernel itself being secure and up to date.
-
-### Secrets vs Environment Variables
-
-- **Environment variables** are simple key/value pairs passed to a
-  container (`-e KEY=value`, or an `.env` file). They are easy to use but are
-  visible to anyone who can inspect the container (`docker inspect`,
-  `/proc/<pid>/environ`), and they can end up in logs, image layers, or
-  process listings if not handled carefully.
-- **Secrets** (e.g. Docker Secrets, or files mounted read-only at runtime)
-  are meant specifically for sensitive data (passwords, API keys, certificates).
-  They are stored encrypted and are only mounted into memory/a tmpfs inside
-  the container at runtime, not baked into the image or exposed through
-  ordinary environment inspection.
-
-Rule of thumb: use environment variables for non-sensitive configuration, and
-secrets for anything that must stay confidential (passwords, private keys,
-tokens).
-
-### Docker Network vs Host Network
-
-Docker supports several network drivers:
-
-- **none**: the container has no network access at all.
-- **bridge** (default): the container gets its own private, isolated network
-  namespace and virtual interface, connected to the host through a virtual
-  bridge. Ports must be explicitly published (`-p`) to be reachable from
-  outside.
-- **host**: the container shares the host's network namespace directly. It
-  uses the host's network interfaces and ports as-is — no port mapping is
-  needed (and none is possible), but this also means less isolation between
-  the container and the host network stack.
-
-In short: the **bridge** network isolates the container's network stack from
-the host (safer, requires explicit port publishing), while the **host**
-network gives the container direct access to the host's networking (faster,
-simpler for some use cases, but less isolated).
-
-### Docker Volumes vs Bind Mounts
-
-Both let a container persist or share data with the host filesystem, but they
-differ in where that data lives and who manages it:
-
-- **Volumes**: managed entirely by Docker, stored under Docker's own storage
-  area (e.g. `/var/lib/docker/volumes/`). They are the preferred way to
-  persist data generated by containers (databases, uploads, etc.), are
-  portable, and can be backed up, shared between containers, or driven by
-  volume plugins.
-- **Bind mounts**: map an arbitrary path on the host filesystem directly into
-  the container. They are simpler and give direct access to host files
-  (useful for development, e.g. mounting source code), but they depend on the
-  host's directory structure and are less portable, and give the container
-  direct read/write access to that part of the host filesystem.
-
-Rule of thumb: use **volumes** for data the container itself owns and should
-persist across restarts, and **bind mounts** when you specifically need to
-share existing files/directories from the host (e.g. live-reloading code
-during development).
-
-## Resources
-
-### Documentation & references
-- [Docker official documentation](https://docs.docker.com/)
-- [Docker Engine overview](https://docs.docker.com/engine/)
-- [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
-- [Docker networking overview](https://docs.docker.com/network/)
-- [Docker storage overview](https://docs.docker.com/storage/)
-- [Docker volumes](https://docs.docker.com/engine/storage/volumes/)
-- [Docker secrets](https://docs.docker.com/engine/swarm/secrets/)
-- Linux manual pages: `man cgroups`, `man namespaces`
-- [What even is a container: namespaces and cgroups (Julia Evans)](https://jvns.ca/blog/2016/10/10/what-even-is-a-container/)
 
 
-## ----------------------------------------------------------------------------------
-# Intrucduction About Containers 
+![Alternative text](https://media.geeksforgeeks.org/wp-content/uploads/20250823130235313168/virtual_machines.webp)
+
 
 containersation since it come from 1970
 
