@@ -106,6 +106,8 @@ out, since none of them are part of Inception.
 
 ### 1. Containers
 
+![Alternative text](https://i.sstatic.net/Cx1eo.png)
+
 A container is a lightweight, isolated environment that bundles an
 application with everything it needs to run (code, runtime, libraries,
 config), while sharing the host machine's kernel instead of running its own.
@@ -114,6 +116,8 @@ service — runs as exactly one container, following the "one process per
 container" rule the subject requires.
 
 ### 2. Container Architecture
+
+![Alternative text](https://storage.ghost.io/c/5f/2f/5f2f4d20-2abf-4534-8d40-7aa233aedd43/content/images/2025/03/namespaces-controlgroups-1.png)
 
 A container gets its isolation from two Linux kernel mechanisms:
 - **namespaces**, which give a container its own private view of the
@@ -148,6 +152,8 @@ subject's requirement to write each `Dockerfile` from scratch.
 
 ### 5. Docker Engine Architecture
 
+![Alternative text](https://cdn.educba.com/academy/wp-content/uploads/2019/10/Docker-Architecture.jpg)
+
 The Docker Engine is a client/server system: the Docker CLI (`docker`,
 `docker compose`) talks to the **Docker daemon** (`dockerd`), which does the
 actual work of building images, and creating/starting/stopping containers,
@@ -155,6 +161,7 @@ networks, and volumes. Portainer (bonus service) is a web UI for exactly
 this daemon: its container is given access to `/var/run/docker.sock` so it
 can query and control the same Docker Engine `docker compose` uses, without
 needing its own separate Docker installation.
+
 
 ### 6. Network
 
@@ -246,6 +253,8 @@ up on its own.
 
 ### Virtual Machines vs Docker
 
+![Alternative text](https://media.geeksforgeeks.org/wp-content/uploads/20230109130229/Docker-vs-VM.png)
+
 | | Virtual Machines | Docker (Containers) |
 |---|---|---|
 | Isolation unit | A whole machine, including its own OS/kernel | A group of processes, isolated via Linux namespaces/cgroups |
@@ -282,61 +291,103 @@ deployment, where the same values (DB passwords, WordPress admin password,
 FTP password, ...) should instead be provided as Docker secrets so they
 never appear in `docker inspect` output or shell history.
 
-### Docker Network vs Host Network
+## Docker Networks
 
-Docker supports several network drivers:
+Docker provides several network drivers, the most common being:
 
-- **none**: the container gets no network access at all.
-- **bridge** (used here, via the custom `inception` network): the container
-  gets its own private, isolated network namespace and virtual interface,
-  connected to the host through a virtual bridge. Only explicitly published
-  ports (`ports:`) are reachable from outside; every other port stays
-  internal to the network, and containers reach each other by service name
-  over Compose's built-in DNS.
-- **host**: the container shares the host's network namespace directly,
-  using the host's interfaces and ports as-is, with no isolation and no
-  possibility of port remapping.
+- **bridge** *(used in this project)*: Each container runs in its own isolated
+  network namespace and connects to a virtual bridge created by Docker.
+  Containers on the same bridge network communicate using their service
+  names through Docker's built-in DNS, while only ports explicitly published
+  with `ports:` are accessible from outside the Docker network.
+- **host**: The container shares the host's network stack directly. There is
+  no network isolation, and the container uses the host's network interfaces
+  and ports without port mapping.
+- **none**: The container has no external network connectivity and only the
+  loopback (`lo`) interface is available.
 
-This project uses a single custom **bridge** network (`inception`) shared by
-every service. This keeps all inter-container traffic (WordPress ↔
-MariaDB, WordPress ↔ Redis, Adminer ↔ MariaDB, FTP ↔ the WordPress volume,
-...) private to the Docker network, and only the ports that genuinely need
-to be public (443 for NGINX, 21/30000-30009 for FTP, 8888 for Adminer, 9443
-for Portainer) are published to the host. Using `network: host` is
-explicitly disallowed by the subject and would defeat the purpose of
-isolating each service.
+This project uses a single custom **bridge** network named `inception`.
+All services (NGINX, WordPress, MariaDB, Redis, Adminer, FTP, and
+Portainer) communicate through this private network using their Compose
+service names. Only the services that must be reachable from outside Docker
+publish ports to the host:
 
-### Docker Volumes vs Bind Mounts
+- **443** → NGINX
+- **21** and **30000-30009** → FTP
+- **8888** → Adminer
+- **9443** → Portainer
 
-Both let container data live outside the container's writable layer so it
-survives container recreation, but they differ in where that data lives and
-who manages it:
+Using a bridge network keeps inter-container communication private while
+allowing controlled external access. Using `network_mode: host` is
+forbidden by the Inception subject and would remove this network isolation.
 
-- **Volumes** (used here for `wordpress_data`, `mariadb_data`, and
-  `portainer_data`) are managed entirely by Docker and stored under
-  Docker's own storage area. They are the recommended way to persist data
-  a container owns (a database's files, WordPress's uploads/themes/plugins,
-  Portainer's state), are portable across hosts, and don't depend on a
-  specific host directory structure.
-- **Bind mounts** map an arbitrary, already-existing path on the host
-  directly into the container. They're simpler and give direct access to
-  host files, which is convenient for this project's requirement that data
-  persist under `/home/<login>/data/...` on the host (created by
-  `make setup`), and for mounting the Docker socket
-  (`/var/run/docker.sock`) into the Portainer container so it can control
-  the Docker daemon — but they tie the setup to the host's own filesystem
-  layout and give the container direct read/write access to that part of
-  the host.
+---
 
-In practice this project combines both: named volumes are declared in
-`docker-compose.yml`, but they are backed by fixed bind-mount paths on the
-host (`/home/<user>/data/mariadb`, `/home/<user>/data/wordpress`) so the
-data is both managed through Docker's volume model and easy to locate,
-back up, or inspect directly on the host.
+## Docker Volumes
 
+Docker provides two common ways to persist data outside a container's
+writable layer: **named volumes** and **bind mounts**.
+
+### Named Volumes
+
+Named volumes are managed by Docker and are the recommended solution for
+persistent application data.
+
+This project defines the following named volumes:
+
+- `wordpress_data`
+- `mariadb_data`
+- `portainer_data`
+
+These volumes preserve important data such as MariaDB databases,
+WordPress uploads, plugins and themes, and Portainer's configuration.
+Containers can be recreated, updated, or replaced without losing this data.
+
+### Bind Mounts
+
+A bind mount maps an existing file or directory from the host directly into
+a container.
+
+Unlike named volumes, the storage location is chosen by the user rather
+than Docker.
+
+Examples used in this project include:
+
+- `/home/<login>/data/mariadb`
+- `/home/<login>/data/wordpress`
+- `/var/run/docker.sock` (mounted into the Portainer container)
+
+Bind mounts allow containers to access host files directly, making them
+useful for persistent project data and for sharing resources such as the
+Docker socket.
+
+### Named Volumes vs Bind Mounts
+
+| Named Volumes | Bind Mounts |
+|---------------|-------------|
+| Managed by Docker | Managed by the host filesystem |
+| Docker manages the volume lifecycle | User specifies the exact host path |
+| Recommended for persistent application data | Useful for sharing existing host files |
+| Independent of a specific directory structure | Depends on the host filesystem layout |
+| Easy to attach to multiple containers | Provides direct access to host files |
+
+### How This Project Uses Storage
+
+Although this project declares **named volumes** in
+`docker-compose.yml`, they are configured with the Docker **local**
+volume driver and bind to fixed directories on the host:
+
+- `/home/<login>/data/mariadb`
+- `/home/<login>/data/wordpress`
+
+This approach combines Docker's volume management with the directory
+structure required by the Inception subject. Data remains persistent
+between container recreations while also being easy to locate, inspect,
+and back up directly from the host.
 ## Resources
 
 ### Documentation & references
+
 - [Docker official documentation](https://docs.docker.com/)
 - [Docker Compose file reference](https://docs.docker.com/reference/compose-file/)
 - [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
@@ -357,13 +408,12 @@ back up, or inspect directly on the host.
   Dive, Docker Compose, Portainer. (Swarm, Stack, and Kubernetes chapters
   from the same video are not relevant to this project and were not used.)
 
-## ----------------------------------------------------------------------------------
+<!-- ## ----------------------------------------------------------------------------------
 # Intrucduction About Containers 
 
 
 
 ### virtual machines vs docker architecture
-![Alternative text](https://media.geeksforgeeks.org/wp-content/uploads/20230109130229/Docker-vs-VM.png)
 
 
 
@@ -437,7 +487,7 @@ entrypoint ["cmd","arg"]
 CMD = ["arg for entrypoint"]
 
 
-time : [4:55] 
+time : [4:55]  -->
 
 
 
