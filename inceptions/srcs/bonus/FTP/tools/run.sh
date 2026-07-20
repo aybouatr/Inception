@@ -8,18 +8,21 @@ if ! id "$FTP_USER" >/dev/null 2>&1; then
     useradd \
         -m \
         -d "/home/$FTP_USER" \
-        -s /usr/sbin/nologin \
+        -s /bin/bash \
         "$FTP_USER"
 fi
 
-# Always set/update the password
+# Set/update password
 echo "$FTP_USER:$FTP_PASSWORD" | chpasswd
+
+# Create FTP root if it doesn't exist
+mkdir -p /var/www/html
 
 # Give ownership of the WordPress files
 chown -R "$FTP_USER:$FTP_USER" /var/www/html
 
-# Replace passive IP
+# Replace passive IP in config
 sed -i "s|PASV_ADDRESS|${FTP_PASV_ADDRESS}|g" /etc/vsftpd.conf
 
-# Start FTP server
+# Start vsftpd in foreground
 exec /usr/sbin/vsftpd /etc/vsftpd.conf

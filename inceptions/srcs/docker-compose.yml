@@ -89,23 +89,21 @@ services:
       - inception
     restart: always
    
-  fftp:
+  ftp:
     build: ./bonus/FTP
     container_name: ftp
-    restart: always
-    depends_on:
-      - wordpress
-      - mariadb
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
       FTP_USER: ${FTP_USER}
       FTP_PASSWORD: ${FTP_PASSWORD}
       FTP_PASV_ADDRESS: ${FTP_PASV_ADDRESS}
-
+    volumes:
+      - wordpress_data:/var/www/html
     ports:
       - "21:21"
       - "30000-30009:30000-30009"
-    volumes:
-      - wordpress_data:/var/www/html
     networks:
       - inception
   
