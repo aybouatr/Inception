@@ -19,7 +19,7 @@ Docker Compose:
 - **MariaDB** — the database used by WordPress, running with no built-in
   HTTP server either.
 
-Each service is built from scratch on a minimal base image (Alpine or
+Each service is built from scratch on a minimal base image (Alpine ||
 Debian), configured through its own `Dockerfile` and configuration files, and
 communicates with the others only over a dedicated, internal Docker network.
 No `latest` tags, no pre-built "all-in-one" images, no `network: host`, and
