@@ -2,6 +2,7 @@
 
 set -e
 
+
 mkdir -p /run/mysqld
 chown mysql:mysql /run/mysqld
 chmod 755 /run/mysqld
@@ -36,17 +37,17 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
     mariadb -u root << EOF
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
 
-CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${(cat /run/secrets/mysql_user_password)}';
 
 GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
 
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${(cat /run/secrets/mysql_root_password)}';
 
 FLUSH PRIVILEGES;
 EOF
 
     # Stop temporary server
-    mariadb-admin -u root -p"${MYSQL_ROOT_PASSWORD}" shutdown
+    mariadb-admin -u root -p"${(cat /run/secrets/mysql_root_password)}" shutdown
 
     echo "Initialization completed."
 fi

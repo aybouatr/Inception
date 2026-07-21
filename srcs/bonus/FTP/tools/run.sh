@@ -13,7 +13,7 @@ if ! id "$FTP_USER" >/dev/null 2>&1; then
 fi
 
 # Set/update password
-echo "$FTP_USER:$FTP_PASSWORD" | chpasswd
+echo "$FTP_USER:$(cat /run/secrets/ftp_password)" | chpasswd
 
 # Create FTP root if it doesn't exist
 mkdir -p /var/www/html

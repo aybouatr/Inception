@@ -1,39 +1,32 @@
 services:
   nginx:
     build: ./requirement/nginx
+    image: srcs-nginx-run
     container_name: srcs-nginx
     restart: always
     ports:
-       - "443:443"
+      - "443:443"
     depends_on:
       - wordpress
-    
     volumes:
-      - wordpress_data:/var/www/html 
+      - wordpress_data:/var/www/html
     networks:
       - inception
 
   wordpress:
     build: ./requirement/wordpress
+    image: srcs-wordpress-run
     container_name: srcs-wordpress
     restart: always
     depends_on:
       - mariadb
-    # add healthcheck for wordpress container
-    # healthcheck:
-    #   test: ["", "sr"]
-    #   interval: 30s
-    #   timeout: 1m
-    #   retries: 10
-    #   start_period: 10s
-    
     expose:
       - "9000"
+
     environment:
       MYSQL_HOST: ${MYSQL_HOST}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
 
       DOMAIN_NAME: ${DOMAIN_NAME}
 
@@ -47,69 +40,80 @@ services:
       WP_USER_PASSWORD: ${WP_USER_PASSWORD}
       WP_USER_EMAIL: ${WP_USER_EMAIL}
 
-     
+    secrets:
+      - mysql_user_password
+      - wp_admin_password
+
     volumes:
       - wordpress_data:/var/www/html
+
     networks:
       - inception
 
   mariadb:
     build: ./requirement/mariadb
+    image: srcs-mariadb-run
     container_name: srcs-mariadb
     restart: always
+
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    # healthcheck:
-    #   test: ["ping", "srcs-mariadb"]
-    #   interval: 30s
-    #   timeout: 1m
-    #   retries: 10
-    #   start_period: 10s 
+
+    secrets:
+      - mysql_root_password
+      - mysql_user_password
+
     volumes:
-      - mariadb_data:/var/lib/mysql 
+      - mariadb_data:/var/lib/mysql
+
     networks:
       - inception
-  redis:                                  ## redis
+
+  redis:
     build: ./bonus/redis
-    container_name: redis
-    image: redis
+    image: srcs-redis-run
+    container_name: srcs-redis
     restart: unless-stopped
     expose:
-      - "6379"                         
+      - "6379"
     networks:
       - inception
-    
-  static: 
+
+  static:
     build: ./bonus/static
-    container_name: static-site
-    networks: 
-      - inception
+    image: srcs-static-run
+    container_name: srcs-static
     restart: always
-   
+    networks:
+      - inception
+
   ftp:
     build: ./bonus/FTP
-    container_name: ftp
+    image: srcs-ftp-run
+    container_name: srcs-ftp
     restart: unless-stopped
-    env_file:
-      - .env
+
     environment:
       FTP_USER: ${FTP_USER}
-      FTP_PASSWORD: ${FTP_PASSWORD}
       FTP_PASV_ADDRESS: ${FTP_PASV_ADDRESS}
+    secrets:
+      - ftp_password
+
     volumes:
       - wordpress_data:/var/www/html
+
     ports:
       - "21:21"
       - "30000-30009:30000-30009"
+
     networks:
       - inception
-  
+
   adminer:
     build: ./bonus/Adminer
-    container_name: adminer
+    image: srcs-adminer-run
+    container_name: srcs-adminer
     restart: always
     ports:
       - "8888:8888"
@@ -118,7 +122,8 @@ services:
 
   portainer:
     build: ./bonus/portainer
-    container_name: portainer
+    image: srcs-portainer-run
+    container_name: srcs-portainer
     restart: always
     ports:
       - "9443:9443"
@@ -127,14 +132,25 @@ services:
       - portainer_data:/data
     networks:
       - inception
+
 volumes:
   wordpress_data:
     name: wordpress_data
-  portainer_data:
-    name: portainer_data
   mariadb_data:
     name: mariadb_data
+  portainer_data:
+    name: portainer_data
 
 networks:
   inception:
     driver: bridge
+
+secrets:
+  mysql_root_password:
+    environment: MYSQL_ROOT_PASSWORD
+  mysql_user_password:
+    environment: MYSQL_PASSWORD
+  ftp_password:
+    environment: FTP_PASSWORD
+  wp_admin_password:
+    environment: WP_ADMIN_PASSWORD
